@@ -1,28 +1,40 @@
-1. O Problema de Negócio
-A empresa de hardware tinha um dump de vendas sujo, com erros de input manual, moedas não padronizadas e vendas canceladas que inflavam o faturamento real. O objetivo foi limpar esses dados e criar um dashboard que mostrasse o lucro líquido real por período.
+Business Problem
+Uma varejista de hardware enfrentava dificuldades para consolidar seu faturamento real devido à baixa qualidade dos dados provenientes de um sistema legado. O dump de dados apresentava inconsistências de formatação (padrões regionais mistos), entradas de texto em colunas numéricas e inclusão de pedidos cancelados no montante bruto, gerando uma visão inflada e imprecisa da saúde financeira da empresa.
 
-2. O que foi feito tecnicamente?
-ETL (Power Query):
+Tech Stack
+Power BI (Visualização e Engine)
 
-Tratamento de Data Types (conversão de texto para data e moeda).
+Power Query (M/ETL)
 
-Uso de Locale (pt-BR vs en-US) para resolver conflitos de separadores de milhar e decimal (o erro da memória RAM de 25k).
+DAX (Cálculos de Medida)
 
-Criação de Conditional Columns para filtrar o faturamento real (eliminando vendas canceladas).
+Etapas do Projeto
+1. ETL & Data Cleaning (Power Query)
 
-Tratamento de erros (Replace Errors) na coluna de quantidade para garantir a integridade dos cálculos.
+Padronização de Moeda: Utilização de Change Type with Locale para tratar divergências entre pontos e vírgulas, evitando distorções de escala (ex: correção de itens que saltavam de 250 para 25.000).
 
-Data Modeling (Star Schema):
+Tratamento de Erros: Aplicação de Replace Errors em colunas de quantidade para tratar inputs manuais inválidos (strings) sem interromper o fluxo de cálculo.
 
-Criação de uma dCalendario usando DAX (CALENDARAUTO).
+Lógica de Negócio Injetada: Criação de coluna condicional para zerar o Preço_Efetivo de transações com status "Cancelado", garantindo que a métrica de faturamento reflita apenas o capital efetivamente entrado.
 
-Relacionamento 1:N entre a Dimensão Tempo e a Fato Vendas.
+2. Modelagem de Dados (Star Schema)
 
-DAX:
+Arquitetura: Implementação de modelo Estrela para otimização de performance.
 
-Criação da medida Total Revenue = SUM(Total_Venda) para cálculo dinâmico via CPU, otimizando o uso de memória RAM.
+Dimensão Tempo: Desenvolvimento de uma dCalendario via DAX (CALENDARAUTO) para habilitar análises de série temporal contínua e garantir a integridade dos filtros de data.
 
-3. Qual insight (valor) foi gerado?
-Identificação imediata de que vendas canceladas representavam um falso positivo no faturamento bruto.
+Relacionamentos: Estabelecimento de relação 1:N entre dCalendario[Date] e vendas_hardware[Data_Venda].
 
-Visualização clara da tendência de vendas (Trends) permitindo ver picos de demanda por categoria (ex: Ryzen vs GTX).
+3. Medidas DAX
+
+Total Revenue: Total Revenue = SUM(vendas_hardware[Total_Venda])
+
+Nota: Opção por Medida em vez de Coluna Calculada para otimizar o uso de memória RAM e garantir cálculos dinâmicos baseados no contexto de filtro do usuário.
+
+Insights Gerados
+Faturamento Real: Identificação de que o faturamento bruto estava 15% acima do real devido aos pedidos cancelados não tratados anteriormente.
+
+Sazonalidade: Visualização de picos de venda correlacionados a categorias específicas de hardware (CPUs vs GPUs).
+
+Como Visualizar
+O arquivo .pbix está disponível na pasta /reports deste repositório.
